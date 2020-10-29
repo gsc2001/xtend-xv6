@@ -89,6 +89,11 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
+  //starttime = ticks and initialize rtime and etime to 0
+  p->etime = 0;
+  p->rtime = 0;
+  p->ctime = ticks;
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -113,6 +118,20 @@ found:
   p->context->eip = (uint)forkret;
 
   return p;
+}
+
+// Function to update rtime of running processes
+void inc_rtime(void) {
+  acquire(&ptable.lock);
+
+  // loop over all processes and increase rtime for running ones
+  for(struct proc * p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if(p->state == RUNNING) {
+      p->rtime ++;
+    }
+  }
+  release(&ptable.lock);
 }
 
 //PAGEBREAK: 32
@@ -233,6 +252,8 @@ exit(void)
 
   if(curproc == initproc)
     panic("init exiting");
+  
+  curproc->etime = ticks;
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
