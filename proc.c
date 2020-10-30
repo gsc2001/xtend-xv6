@@ -410,6 +410,10 @@ void scheduler(void)
     c->proc = 0;
 
 #if SCHEDULER == RR
+#ifdef DEBUG
+    cprintf("SCHEDULER: RR\n");
+#endif
+
     for (;;)
     {
         // Enable interrupts on this processor.
@@ -421,6 +425,9 @@ void scheduler(void)
         {
             if (p->state != RUNNABLE)
                 continue;
+#ifdef DEBUG
+            cprintf("Schedular: Core:%d, Process: [%d] %s\n", c->apicid, p->pid, p->name);
+#endif
 
             // Switch to chosen process.  It is the process's job
             // to release ptable.lock and then reacquire it
@@ -439,6 +446,9 @@ void scheduler(void)
         release(&ptable.lock);
     }
 #elif SCHEDULER == FCFS
+#ifdef DEBUG
+    cprintf("SCHEDULER: FCFS\n");
+#endif
 
     struct proc *selected = 0;
     for (;;)
@@ -468,6 +478,10 @@ void scheduler(void)
             release(&ptable.lock);
             continue;
         }
+
+#ifdef DEBUG
+        cprintf("Schedular: Core:%d, Process: [%d] %s, Ctime: %d\n", c->apicid, selected->pid, selected->name, selected->ctime);
+#endif
 
         // switch to select process
         c->proc = selected;

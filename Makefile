@@ -92,21 +92,15 @@ endif
 
 # Schedular setup
 
-SCHED_DEF = -DSCHEDULER=RR
-
-ifeq (&(SCHEDULER), FCFS)
-SCHED_DEF = -DSCHEDULER=FCFS
+ifndef SCHEDULER
+SCHEDULER=RR
 endif
 
-ifeq (&(SCHEDULER), PBS)
-SCHED_DEF = -DSCHEDULER=PBS
-endif
+CFLAGS += -D SCHEDULER=$(SCHEDULER)
 
-ifeq (&(SCHEDULER), MLFQ)
-SCHED_DEF = -DSCHEDULER=MLFQ
+ifeq ($(DEBUG), TRUE)
+CFLAGS += -D DEBUG
 endif
-
-CFLAGS += $(SCHED_DEF)
 
 xv6.img: bootblock kernel
 	dd if=/dev/zero of=xv6.img count=10000
@@ -199,7 +193,8 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
-	_time
+	_time \
+	_benchmark
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -272,7 +267,7 @@ EXTRA=\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
-	time.c
+	time.c benchmark.c
 
 dist:
 	rm -rf dist
