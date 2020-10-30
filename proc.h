@@ -55,6 +55,14 @@ struct proc {
   int rtime;                   // total time
 };
 
+// Scheduling algorithms options
+
+#define RR 0
+#define FCFS 1
+#define PBS 2
+#define MLFQ 3
+
+
 // Process memory is laid out contiguously, low addresses first:
 //   text
 //   original data and bss

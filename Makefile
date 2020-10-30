@@ -90,6 +90,24 @@ ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
 CFLAGS += -fno-pie -nopie
 endif
 
+# Schedular setup
+
+SCHED_DEF = -DSCHEDULER=RR
+
+ifeq (&(SCHEDULER), FCFS)
+SCHED_DEF = -DSCHEDULER=FCFS
+endif
+
+ifeq (&(SCHEDULER), PBS)
+SCHED_DEF = -DSCHEDULER=PBS
+endif
+
+ifeq (&(SCHEDULER), MLFQ)
+SCHED_DEF = -DSCHEDULER=MLFQ
+endif
+
+CFLAGS += $(SCHED_DEF)
+
 xv6.img: bootblock kernel
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
