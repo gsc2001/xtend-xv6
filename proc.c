@@ -95,8 +95,10 @@ found:
     p->etime = 0;
     p->rtime = 0;
     p->ctime = ticks;
-    p->priority = 60;
 
+    // init prior = 60, and timeslices = 0
+    p->priority = 60;
+    p->timeslices = 0;
     release(&ptable.lock);
 
     // Allocate kernel stack.
@@ -399,6 +401,7 @@ int waitx(int *wtime, int *rtime)
 
 int set_priority(int new_prior, int pid)
 {
+    // cprintf("new, %d %d\n", pid, new_prior);
     if (new_prior < 0 || new_prior > 100)
         return -1;
 
@@ -410,18 +413,24 @@ int set_priority(int new_prior, int pid)
         {
             old_priority = p->priority;
             p->priority = new_prior;
+            if (new_prior != old_priority)
+                p->timeslices = 0;
             break;
         }
     }
     release(&ptable.lock);
 
     if (old_priority < 0)
+    {
+        // cprintf("HI %d\n", pid);
+        // pid not found
         return -1;
+    }
 
     if (new_prior > old_priority)
         yield();
 
-    release(&ptable.lock);
+    return old_priority;
 }
 
 //PAGEBREAK: 42
@@ -434,7 +443,7 @@ int set_priority(int new_prior, int pid)
 //      via swtch back to the scheduler.
 void scheduler(void)
 {
-    struct proc *p;
+    struct proc *p, *selected;
     struct cpu *c = mycpu();
     c->proc = 0;
 
@@ -447,9 +456,6 @@ void scheduler(void)
         acquire(&ptable.lock);
 
 #if SCHEDULER == RR
-#ifdef DEBUG
-        cprintf("SCHEDULER: RR\n");
-#endif
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
         {
             if (p->state != RUNNABLE)
@@ -470,11 +476,8 @@ void scheduler(void)
             c->proc = 0;
         }
 #elif SCHEDULER == FCFS
-#ifdef DEBUG
-        cprintf("SCHEDULER: FCFS\n");
-#endif
 
-        struct proc *selected = 0;
+        selected = 0;
         int earliest = ticks + 100;
 
         // run through all the processes and pick the earlieast one
@@ -505,6 +508,46 @@ void scheduler(void)
         }
 
 #elif SCHEDULER == PBS
+
+        selected = 0;
+        int highest = 101;
+        int min_time = ticks + 100;
+
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        {
+            if (p->state != RUNNABLE)
+                continue;
+
+            if (p->priority < highest)
+            {
+                highest = p->priority;
+                min_time = p->timeslices;
+                selected = p;
+            }
+            else if (p->priority == highest && p->timeslices < min_time)
+            {
+                min_time = p->timeslices;
+                selected = p;
+            }
+        }
+
+        if (selected)
+        {
+            // selected a process
+            // inc the timeslices
+            selected->timeslices++;
+
+            c->proc = selected;
+            switchuvm(selected);
+            selected->state = RUNNING;
+
+            swtch(&(c->scheduler), selected->context);
+            switchkvm();
+
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+        }
 
 #endif
         release(&ptable.lock);

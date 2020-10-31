@@ -64,6 +64,7 @@ struct proc
     uint etime;                 // end time
     uint rtime;                 // total time
     uint priority;              // priority of the process
+    uint timeslices;            // slices of time taken by this process
 };
 
 // Scheduling algorithms options
