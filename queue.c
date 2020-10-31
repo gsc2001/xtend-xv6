@@ -9,27 +9,29 @@
 #include "traps.h"
 #include "x86.h"
 
-proc_node *q_alloc()
+struct proc_node *q_alloc()
 {
     for (int i = 0; i < NPROC; i++)
     {
-        if (store[i]->use == 0)
+        if (store[i].use == 0)
         {
-            store[i]->use = 1;
+            // cprintf("IN ALLOCATION\n");
+            store[i].use = 1;
             return &store[i];
         }
     }
-    return -1;
+    return 0;
 }
 
-void q_free(proc_node *p)
+void q_free(struct proc_node *p)
 {
+    // cprintf("FREEING %d\n", p->p->pid);
     p->use = 0;
 }
 
-proc_node *push(proc_node *head, proc_node *p)
+struct proc_node *push(struct proc_node *head, struct proc *p)
 {
-    proc_node *new = q_alloc();
+    struct proc_node *new = q_alloc();
     new->p = p;
     new->next = 0;
 
@@ -38,7 +40,7 @@ proc_node *push(proc_node *head, proc_node *p)
         return new;
     }
 
-    proc_node *i = head;
+    struct proc_node *i = head;
     while (i->next != 0)
     {
         i = i->next;
@@ -48,12 +50,12 @@ proc_node *push(proc_node *head, proc_node *p)
     return head;
 }
 
-proc_node *pop(proc_node *head)
+struct proc_node *pop(struct proc_node *head)
 {
     if (head == 0)
         return 0;
 
-    proc_node *t = head->next;
+    struct proc_node *t = head->next;
     q_free(head);
     return t;
 }

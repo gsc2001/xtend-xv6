@@ -24,6 +24,15 @@ static void wakeup1(void *chan);
 void pinit(void)
 {
     initlock(&ptable.lock, "ptable");
+    for (int i = 0; i < NQUE; i++)
+        queues[i] = 0;
+
+    for (int i = 0; i < NPROC; i++)
+    {
+        store[i].use = 0;
+        store[i].next = 0;
+        store[i].p = 0;
+    }
 }
 
 // Must be called with interrupts disabled
@@ -99,6 +108,11 @@ found:
     // init prior = 60, and timeslices = 0
     p->priority = 60;
     p->timeslices = 0;
+
+    p->got_queue = 0;
+    p->cticks = 0;
+    p->queue = 0;
+
     release(&ptable.lock);
 
     // Allocate kernel stack.
@@ -441,6 +455,14 @@ int set_priority(int new_prior, int pid)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
+void inc_cticks(struct proc *p)
+{
+    // acquire(&ptable.lock);
+    p->cticks++;
+    // release(&ptable.lock);
+}
+
 void scheduler(void)
 {
     struct proc *p, *selected;
@@ -455,101 +477,168 @@ void scheduler(void)
         // Loop over process table looking for process to run.
         acquire(&ptable.lock);
 
-#if SCHEDULER == RR
+        // #if SCHEDULER == RR
+        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        //         {
+        //             if (p->state != RUNNABLE)
+        //                 continue;
+
+        //             // Switch to chosen process.  It is the process's job
+        //             // to release ptable.lock and then reacquire it
+        //             // before jumping back to us.
+        //             c->proc = p;
+        //             switchuvm(p);
+        //             p->state = RUNNING;
+
+        //             swtch(&(c->scheduler), p->context);
+        //             switchkvm();
+
+        //             // Process is done running for now.
+        //             // It should have changed its p->state before coming back.
+        //             c->proc = 0;
+
+        //             // after finishing process runnable then reshedule
+        //         }
+        // #elif SCHEDULER == FCFS
+
+        //         selected = 0;
+        //         int earliest = ticks + 100;
+
+        //         // run through all the processes and pick the earlieast one
+        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        //         {
+        //             if (p->state != RUNNABLE)
+        //                 continue;
+
+        //             if (p->ctime < earliest)
+        //             {
+        //                 earliest = p->ctime;
+        //                 selected = p;
+        //             }
+        //         }
+
+        //         if (selected)
+        //         {
+        //             c->proc = selected;
+        //             switchuvm(selected);
+        //             selected->state = RUNNING;
+
+        //             swtch(&(c->scheduler), selected->context);
+        //             switchkvm();
+
+        //             // Process is done running for now.
+        //             // It should have changed its p->state before coming back.
+        //             c->proc = 0;
+        //         }
+
+        // #elif SCHEDULER == PBS
+
+        //         selected = 0;
+        //         int highest = 101;
+        //         int min_time = ticks + 100;
+
+        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        //         {
+        //             if (p->state != RUNNABLE)
+        //                 continue;
+
+        //             if (p->priority < highest)
+        //             {
+        //                 highest = p->priority;
+        //                 min_time = p->timeslices;
+        //                 selected = p;
+        //             }
+        //             else if (p->priority == highest && p->timeslices < min_time)
+        //             {
+        //                 min_time = p->timeslices;
+        //                 selected = p;
+        //             }
+        //         }
+
+        //         if (selected)
+        //         {
+        //             // selected a process
+        //             // inc the timeslices
+        //             selected->timeslices++;
+
+        //             c->proc = selected;
+        //             switchuvm(selected);
+        //             selected->state = RUNNING;
+
+        //             swtch(&(c->scheduler), selected->context);
+        //             switchkvm();
+
+        //             // Process is done running for now.
+        //             // It should have changed its p->state before coming back.
+        //             c->proc = 0;
+        //         }
+
+        // #elif SCHEDULER == MLFQ
+
+        //add to queue processes which dont have a queue
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
         {
-            if (p->state != RUNNABLE)
-                continue;
-
-            // Switch to chosen process.  It is the process's job
-            // to release ptable.lock and then reacquire it
-            // before jumping back to us.
-            c->proc = p;
-            switchuvm(p);
-            p->state = RUNNING;
-
-            swtch(&(c->scheduler), p->context);
-            switchkvm();
-
-            // Process is done running for now.
-            // It should have changed its p->state before coming back.
-            c->proc = 0;
-        }
-#elif SCHEDULER == FCFS
-
-        selected = 0;
-        int earliest = ticks + 100;
-
-        // run through all the processes and pick the earlieast one
-        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        {
-            if (p->state != RUNNABLE)
-                continue;
-
-            if (p->ctime < earliest)
+            if (p->got_queue == 0 && p->state == RUNNABLE)
             {
-                earliest = p->ctime;
-                selected = p;
-            }
-        }
-
-        if (selected)
-        {
-            c->proc = selected;
-            switchuvm(selected);
-            selected->state = RUNNING;
-
-            swtch(&(c->scheduler), selected->context);
-            switchkvm();
-
-            // Process is done running for now.
-            // It should have changed its p->state before coming back.
-            c->proc = 0;
-        }
-
-#elif SCHEDULER == PBS
-
-        selected = 0;
-        int highest = 101;
-        int min_time = ticks + 100;
-
-        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        {
-            if (p->state != RUNNABLE)
-                continue;
-
-            if (p->priority < highest)
-            {
-                highest = p->priority;
-                min_time = p->timeslices;
-                selected = p;
-            }
-            else if (p->priority == highest && p->timeslices < min_time)
-            {
-                min_time = p->timeslices;
-                selected = p;
-            }
-        }
-
-        if (selected)
-        {
-            // selected a process
-            // inc the timeslices
-            selected->timeslices++;
-
-            c->proc = selected;
-            switchuvm(selected);
-            selected->state = RUNNING;
-
-            swtch(&(c->scheduler), selected->context);
-            switchkvm();
-
-            // Process is done running for now.
-            // It should have changed its p->state before coming back.
-            c->proc = 0;
-        }
-
+                p->got_queue = 1;
+                p->cticks = 0;
+                p->talloc = ticks;
+                queues[p->queue] = push(queues[p->queue], p);
+#ifdef DEBUG
+                cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
 #endif
+            }
+        }
+
+        selected = 0;
+        // search in ques
+        for (int i = 0; i < NQUE; i++)
+        {
+            if (queues[i] != 0)
+            {
+                selected = queues[i]->p;
+                selected->got_queue = 0;
+                selected->cticks = 0;
+                queues[i] = pop(queues[i]);
+#ifdef DEBUG
+                cprintf("RUNNING [%d] from queue [%d]\n", selected->pid, selected->queue);
+#endif
+
+                break;
+            }
+        }
+
+        if (!selected)
+        {
+            release(&ptable.lock);
+            continue;
+        }
+
+        c->proc = selected;
+        switchuvm(selected);
+        selected->state = RUNNING;
+
+        swtch(&(c->scheduler), selected->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+
+        // process ended
+        if (selected->state == RUNNABLE)
+        {
+#ifdef DEBUG
+            cprintf("PROCESS [%d] from queue [%d] exited with state RUNNABLE\n", selected->pid, selected->queue);
+#endif
+            if (selected->cticks >= (1 << (selected->queue)))
+            {
+                if (selected->queue != NQUE - 1)
+                    selected->queue++;
+            }
+        }
+
+        // #endif
         release(&ptable.lock);
     }
 }

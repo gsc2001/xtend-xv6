@@ -17,8 +17,15 @@ int main(int argc, char *argv[])
         }
         if (pid == 0)
         {
+            int length = 100000000;
+            int _n = 10;
+            if (j == 0)
+            {
+                length = 2;
+                _n = 10;
+            }
             volatile int i;
-            for (volatile int k = 0; k < number_of_processes; k++)
+            for (volatile int k = 0; k < _n; k++)
             {
                 // if (k <= j)
                 // {
@@ -26,10 +33,12 @@ int main(int argc, char *argv[])
                 // }
                 // else
                 // {
-                for (i = 0; i < 100000000; i++)
+
+                for (i = 0; i < length; i++)
                 {
                     ; //cpu time
                 }
+                sleep(10);
                 // }
             }
 
@@ -38,8 +47,8 @@ int main(int argc, char *argv[])
         }
         else
         {
-            int a = set_priority(100 - (20 + j), pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
-            printf(1, "Process %d -> %d\n", j, a);
+            // int a = set_priority(100 - (20 + j), pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
+            // printf(1, "Process %d -> %d\n", j, a);
         }
     }
     for (j = 0; j < number_of_processes + 5; j++)

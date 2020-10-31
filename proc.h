@@ -65,6 +65,10 @@ struct proc
     uint rtime;                 // total time
     uint priority;              // priority of the process
     uint timeslices;            // slices of time taken by this process
+    int cticks;                 // ticks for the process in this queue
+    int queue;                  // queue of the process
+    int got_queue;              // has the process got queue
+    int talloc;                 // time to store last queue allocation
 };
 
 // Scheduling algorithms options
@@ -81,11 +85,15 @@ struct proc
 //   expandable heap
 
 // Struct for MLFQ scheduling nodes
-typedef struct proc_node
+struct proc_node
 {
-    struct proc *p;    // Pointer to process
-    struct node *next; // pointer to next node
-    int use;           // Has this node been used 0 for no 1 for yes
-} proc_node;
+    struct proc *p;         // Pointer to process
+    struct proc_node *next; // pointer to next node
+    int use;                // Has this node been used 0 for no 1 for yes
+};
 
-proc_node *store[NPROC];
+// number of queues
+#define NQUE 5
+
+struct proc_node store[NPROC];
+struct proc_node *queues[NQUE];

@@ -123,6 +123,7 @@ void wakeup(void *);
 void yield(void);
 void inc_rtime(void);
 int set_priority(int, int);
+void inc_cticks(struct proc *);
 
 // swtch.S
 void swtch(struct context **, struct context *);
@@ -188,6 +189,12 @@ void switchuvm(struct proc *);
 void switchkvm(void);
 int copyout(pde_t *, uint, void *, uint);
 void clearpteu(pde_t *pgdir, char *uva);
+
+// queue.c
+struct proc_node *q_alloc();
+void q_free();
+struct proc_node *push(struct proc_node *, struct proc *);
+struct proc_node *pop(struct proc_node *);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
