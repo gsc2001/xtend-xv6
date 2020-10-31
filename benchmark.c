@@ -19,11 +19,6 @@ int main(int argc, char *argv[])
         {
             int length = 100000000;
             int _n = 10;
-            if (j == 0)
-            {
-                length = 2;
-                _n = 10;
-            }
             volatile int i;
             for (volatile int k = 0; k < _n; k++)
             {
@@ -47,6 +42,7 @@ int main(int argc, char *argv[])
         }
         else
         {
+            printf(1, "Process %d -> %d\n", j, pid);
             // int a = set_priority(100 - (20 + j), pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
             // printf(1, "Process %d -> %d\n", j, a);
         }

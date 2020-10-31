@@ -415,7 +415,7 @@ int waitx(int *wtime, int *rtime)
 
 int set_priority(int new_prior, int pid)
 {
-    // cprintf("new, %d %d\n", pid, new_prior);
+    cprintf("new, %d %d\n", pid, new_prior);
     if (new_prior < 0 || new_prior > 100)
         return -1;
 
