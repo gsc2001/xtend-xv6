@@ -95,6 +95,7 @@ found:
     p->etime = 0;
     p->rtime = 0;
     p->ctime = ticks;
+    p->priority = 60;
 
     release(&ptable.lock);
 
@@ -395,6 +396,34 @@ int waitx(int *wtime, int *rtime)
         sleep(curproc, &ptable.lock); //DOC: wait-sleep
     }
 }
+
+int set_priority(int new_prior, int pid)
+{
+    if (new_prior < 0 || new_prior > 100)
+        return -1;
+
+    int old_priority = -1;
+    acquire(&ptable.lock);
+    for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+        if (p->pid == pid)
+        {
+            old_priority = p->priority;
+            p->priority = new_prior;
+            break;
+        }
+    }
+    release(&ptable.lock);
+
+    if (old_priority < 0)
+        return -1;
+
+    if (new_prior > old_priority)
+        yield();
+
+    release(&ptable.lock);
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.

@@ -60,10 +60,10 @@ struct proc
     struct file *ofile[NOFILE]; // Open files
     struct inode *cwd;          // Current directory
     char name[16];              // Process name (debugging)
-
-    uint ctime; // Creation time
-    uint etime; // end time
-    uint rtime; // total time
+    uint ctime;                 // Creation time
+    uint etime;                 // end time
+    uint rtime;                 // total time
+    uint priority;              // priority of the process
 };
 
 // Scheduling algorithms options
