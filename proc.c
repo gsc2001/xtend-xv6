@@ -465,7 +465,10 @@ void inc_cticks(struct proc *p)
 
 void scheduler(void)
 {
-    struct proc *p, *selected;
+    struct proc *p;
+#if SCHEDULER != RR
+    struct proc *selected;
+#endif
     struct cpu *c = mycpu();
     c->proc = 0;
 
@@ -477,116 +480,135 @@ void scheduler(void)
         // Loop over process table looking for process to run.
         acquire(&ptable.lock);
 
-        // #if SCHEDULER == RR
-        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        //         {
-        //             if (p->state != RUNNABLE)
-        //                 continue;
+#if SCHEDULER == RR
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        {
+            if (p->state != RUNNABLE)
+                continue;
 
-        //             // Switch to chosen process.  It is the process's job
-        //             // to release ptable.lock and then reacquire it
-        //             // before jumping back to us.
-        //             c->proc = p;
-        //             switchuvm(p);
-        //             p->state = RUNNING;
+            // Switch to chosen process.  It is the process's job
+            // to release ptable.lock and then reacquire it
+            // before jumping back to us.
+            c->proc = p;
+            switchuvm(p);
+            p->state = RUNNING;
 
-        //             swtch(&(c->scheduler), p->context);
-        //             switchkvm();
+            swtch(&(c->scheduler), p->context);
+            switchkvm();
 
-        //             // Process is done running for now.
-        //             // It should have changed its p->state before coming back.
-        //             c->proc = 0;
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
 
-        //             // after finishing process runnable then reshedule
-        //         }
-        // #elif SCHEDULER == FCFS
+            // after finishing process runnable then reshedule
+        }
+#elif SCHEDULER == FCFS
 
-        //         selected = 0;
-        //         int earliest = ticks + 100;
+        selected = 0;
+        int earliest = ticks + 100;
 
-        //         // run through all the processes and pick the earlieast one
-        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        //         {
-        //             if (p->state != RUNNABLE)
-        //                 continue;
+        // run through all the processes and pick the earlieast one
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        {
+            if (p->state != RUNNABLE)
+                continue;
 
-        //             if (p->ctime < earliest)
-        //             {
-        //                 earliest = p->ctime;
-        //                 selected = p;
-        //             }
-        //         }
+            if (p->ctime < earliest)
+            {
+                earliest = p->ctime;
+                selected = p;
+            }
+        }
 
-        //         if (selected)
-        //         {
-        //             c->proc = selected;
-        //             switchuvm(selected);
-        //             selected->state = RUNNING;
+        if (selected)
+        {
+            c->proc = selected;
+            switchuvm(selected);
+            selected->state = RUNNING;
 
-        //             swtch(&(c->scheduler), selected->context);
-        //             switchkvm();
+            swtch(&(c->scheduler), selected->context);
+            switchkvm();
 
-        //             // Process is done running for now.
-        //             // It should have changed its p->state before coming back.
-        //             c->proc = 0;
-        //         }
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+        }
 
-        // #elif SCHEDULER == PBS
+#elif SCHEDULER == PBS
 
-        //         selected = 0;
-        //         int highest = 101;
-        //         int min_time = ticks + 100;
+        selected = 0;
+        int highest = 101;
+        int min_time = ticks + 100;
 
-        //         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-        //         {
-        //             if (p->state != RUNNABLE)
-        //                 continue;
+        for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+        {
+            if (p->state != RUNNABLE)
+                continue;
 
-        //             if (p->priority < highest)
-        //             {
-        //                 highest = p->priority;
-        //                 min_time = p->timeslices;
-        //                 selected = p;
-        //             }
-        //             else if (p->priority == highest && p->timeslices < min_time)
-        //             {
-        //                 min_time = p->timeslices;
-        //                 selected = p;
-        //             }
-        //         }
+            if (p->priority < highest)
+            {
+                highest = p->priority;
+                min_time = p->timeslices;
+                selected = p;
+            }
+            else if (p->priority == highest && p->timeslices < min_time)
+            {
+                min_time = p->timeslices;
+                selected = p;
+            }
+        }
 
-        //         if (selected)
-        //         {
-        //             // selected a process
-        //             // inc the timeslices
-        //             selected->timeslices++;
+        if (selected)
+        {
+            // selected a process
+            // inc the timeslices
+            selected->timeslices++;
 
-        //             c->proc = selected;
-        //             switchuvm(selected);
-        //             selected->state = RUNNING;
+            c->proc = selected;
+            switchuvm(selected);
+            selected->state = RUNNING;
 
-        //             swtch(&(c->scheduler), selected->context);
-        //             switchkvm();
+            swtch(&(c->scheduler), selected->context);
+            switchkvm();
 
-        //             // Process is done running for now.
-        //             // It should have changed its p->state before coming back.
-        //             c->proc = 0;
-        //         }
+            // Process is done running for now.
+            // It should have changed its p->state before coming back.
+            c->proc = 0;
+        }
 
-        // #elif SCHEDULER == MLFQ
+#elif SCHEDULER == MLFQ
 
         //add to queue processes which dont have a queue
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
         {
-            if (p->got_queue == 0 && p->state == RUNNABLE)
+            if (p->state == RUNNABLE)
             {
-                p->got_queue = 1;
-                p->cticks = 0;
-                p->talloc = ticks;
-                queues[p->queue] = push(queues[p->queue], p);
+                if (p->got_queue == 0)
+                {
+                    p->got_queue = 1;
+                    p->cticks = 0;
+                    p->talloc = ticks;
+                    queues[p->queue] = push(queues[p->queue], p);
 #ifdef DEBUG
-                cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
+                    cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
 #endif
+                }
+                else
+                {
+                    // age >= AGE_THRESH
+                    if ((ticks - p->talloc) >= AGE_THERSH && p->queue > 0)
+                    {
+                        p->got_queue = 1;
+                        p->cticks = 0;
+                        p->talloc = ticks;
+                        queues[p->queue] = pop(queues[p->queue]);
+                        p->queue--;
+                        queues[p->queue] = push(queues[p->queue], p);
+#ifdef DEBUG
+                        cprintf("UPGRADING [%d] to [%d]\n", p->pid, p->queue);
+#endif
+                    }
+                }
             }
         }
 
@@ -638,7 +660,7 @@ void scheduler(void)
             }
         }
 
-        // #endif
+#endif
         release(&ptable.lock);
     }
 }
