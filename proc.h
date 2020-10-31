@@ -79,3 +79,13 @@ struct proc
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+// Struct for MLFQ scheduling nodes
+typedef struct proc_node
+{
+    struct proc *p;    // Pointer to process
+    struct node *next; // pointer to next node
+    int use;           // Has this node been used 0 for no 1 for yes
+} proc_node;
+
+proc_node *store[NPROC];
