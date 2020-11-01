@@ -480,12 +480,12 @@ int ps(void)
 {
     struct proc *p;
     static char *states[] = {
-        [UNUSED] "unused",
-        [EMBRYO] "embryo",
+        [UNUSED] "unused\t",
+        [EMBRYO] "embryo\t",
         [SLEEPING] "sleeping",
-        [RUNNABLE] "runable",
-        [RUNNING] "running",
-        [ZOMBIE] "zombie",
+        [RUNNABLE] "runable\t",
+        [RUNNING] "running\t",
+        [ZOMBIE] "zombie\t",
     };
 
     // ps implementation

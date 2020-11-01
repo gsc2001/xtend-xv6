@@ -196,7 +196,8 @@ UPROGS=\
 	_zombie\
 	_time \
 	_benchmark \
-	_setPriority
+	_setPriority \
+	_ps
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -269,7 +270,7 @@ EXTRA=\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
-	time.c benchmark.c setPriority.c
+	time.c benchmark.c setPriority.c ps.c
 
 dist:
 	rm -rf dist
