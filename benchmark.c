@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
                 {
                     ; //cpu time
                 }
-                sleep(10);
                 // }
             }
 

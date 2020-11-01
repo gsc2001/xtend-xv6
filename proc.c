@@ -476,12 +476,41 @@ void inc_cticks(struct proc *p)
     // release(&ptable.lock);
 }
 
+int ps(void)
+{
+    struct proc *p;
+    static char *states[] = {
+        [UNUSED] "unused",
+        [EMBRYO] "embryo",
+        [SLEEPING] "sleeping",
+        [RUNNABLE] "runable",
+        [RUNNING] "running",
+        [ZOMBIE] "zombie",
+    };
+
+    // ps implementation
+    acquire(&ptable.lock);
+    cprintf("PID\tPriority\tState\tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
+
+    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+        if (p->state == UNUSED)
+            continue;
+        cprintf("%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+                p->pid, p->priority, states[p->state], p->rtime, p->ps_wtime, p->n_run, p->queue,
+                p->q_ticks[0], p->q_ticks[1], p->q_ticks[2], p->q_ticks[3], p->q_ticks[4]);
+    }
+
+    release(&ptable.lock);
+    return 0;
+}
+
 void scheduler(void)
 {
     struct proc *p;
-    // #if SCHEDULER != RR
+#if SCHEDULER != RR
     struct proc *selected;
-    // #endif
+#endif
     struct cpu *c = mycpu();
     c->proc = 0;
 
@@ -518,7 +547,7 @@ void scheduler(void)
 
             // after finishing process runnable then reshedule
         }
-        // #elif SCHEDULER == FCFS
+#elif SCHEDULER == FCFS
 
         selected = 0;
         int earliest = ticks + 100;
@@ -552,7 +581,7 @@ void scheduler(void)
             c->proc = 0;
         }
 
-        // #elif SCHEDULER == PBS
+#elif SCHEDULER == PBS
 
         selected = 0;
         int highest = 101;
@@ -596,7 +625,7 @@ void scheduler(void)
             c->proc = 0;
         }
 
-        // #elif SCHEDULER == MLFQ
+#elif SCHEDULER == MLFQ
 
         //add to queue processes which dont have a queue
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
