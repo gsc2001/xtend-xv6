@@ -100,6 +100,6 @@ struct proc_node
 #define NQUE 5
 
 // Aging thresh
-#define AGE_THERSH 25
+#define AGE_THERSH 10
 struct proc_node store[NPROC];
 struct proc_node *queues[NQUE];

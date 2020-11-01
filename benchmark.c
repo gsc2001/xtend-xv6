@@ -2,8 +2,12 @@
 #include "types.h"
 #include "user.h"
 
+int arr[5], k;
 int main(int argc, char *argv[])
 {
+    for (int i = 0; i < 5; i++)
+        arr[i] = -1;
+    k = 0;
     int number_of_processes = atoi(argv[1]);
     printf(1, "Creating %d processes\n", number_of_processes);
     int j;
@@ -17,7 +21,11 @@ int main(int argc, char *argv[])
         }
         if (pid == 0)
         {
-            int length = 1e7;
+            int length = 1e8;
+            if (j % 2 == 0)
+            {
+                length = 1e5;
+            }
             int _n = 5;
             volatile int i;
             for (volatile int k = 0; k < _n; k++)
@@ -32,6 +40,10 @@ int main(int argc, char *argv[])
                 for (i = 0; i < length; i++)
                 {
                     ; //cpu time
+                }
+                if (j % 2 == 0)
+                {
+                    sleep(200);
                 }
                 // }
             }

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 logs = ""
-with open('logs') as f:
+with open('logs2') as f:
     logs = f.read()
 
 logs = logs.strip().split('\n')
@@ -9,6 +9,7 @@ logs = logs.strip().split('\n')
 graph_proc = {}
 
 min_ticks = 100000
+
 
 for line in logs:
     tick, pid, queue = map(int, line.split(' '))
