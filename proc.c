@@ -87,9 +87,6 @@ void push_process(struct proc *p)
         p->talloc = ticks;
         p->ps_wtime = 0;
         queues[p->queue] = push(queues[p->queue], p);
-#ifdef DEBUG
-        // cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
-#endif
     }
 }
 
@@ -230,7 +227,7 @@ void userinit(void)
     acquire(&ptable.lock);
 
     p->state = RUNNABLE;
-#if SCHEDULAR == MLFQ
+#if SCHEDULER == MLFQ
     push_process(p);
 #endif
     release(&ptable.lock);
@@ -301,7 +298,7 @@ int fork(void)
     acquire(&ptable.lock);
 
     np->state = RUNNABLE;
-#if SCHEDULAR == MLFQ
+#if SCHEDULER == MLFQ
     push_process(np);
 #endif
 
@@ -674,7 +671,9 @@ void scheduler(void)
                     // age >= AGE_THRESH
                     if ((ticks - p->talloc) >= AGE_THERSH && p->queue > 0)
                     {
+
                         queues[p->queue] = pop(queues[p->queue]);
+                        p->got_queue = 0;
                         p->queue--;
                         push_process(p);
 #ifdef DEBUG
@@ -732,8 +731,8 @@ void scheduler(void)
             {
                 if (selected->queue != NQUE - 1)
                     selected->queue++;
-                push_process(p);
             }
+            push_process(p);
         }
 
 #endif
@@ -848,7 +847,7 @@ wakeup1(void *chan)
         if (p->state == SLEEPING && p->chan == chan)
         {
             p->state = RUNNABLE;
-#if SCHEDULAR == MLFQ
+#if SCHEDULER == MLFQ
             push_process(p);
 #endif
         }
@@ -879,7 +878,7 @@ int kill(int pid)
             if (p->state == SLEEPING)
             {
                 p->state = RUNNABLE;
-#if SCHEDULAR == MLFQ
+#if SCHEDULER == MLFQ
                 push_process(p);
 #endif
             }
