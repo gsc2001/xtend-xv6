@@ -76,6 +76,23 @@ myproc(void)
     return p;
 }
 
+// push the process in p->queue (ptable must be held)
+void push_process(struct proc *p)
+{
+
+    if (p->got_queue == 0)
+    {
+        p->got_queue = 1;
+        p->cticks = 0;
+        p->talloc = ticks;
+        p->ps_wtime = 0;
+        queues[p->queue] = push(queues[p->queue], p);
+#ifdef DEBUG
+        // cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
+#endif
+    }
+}
+
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
 // If found, change state to EMBRYO and initialize
@@ -161,10 +178,21 @@ void upd_ptimes(void)
             p->q_ticks[p->queue]++;
 #endif
         }
-        if (p->state == SLEEPING)
+        else if (p->state == SLEEPING)
+        {
             p->iotime++;
-        if (p->state == RUNNABLE)
+        }
+        else if (p->state == RUNNABLE)
+        {
             p->ps_wtime++;
+        }
+
+#ifdef LOGS
+        if ((p->state == RUNNABLE || p->state == SLEEPING || p->state == RUNNING) && p->pid > 3)
+        {
+            cprintf("%d %d %d\n", ticks, p->pid, p->queue);
+        }
+#endif
     }
     release(&ptable.lock);
 }
@@ -202,7 +230,9 @@ void userinit(void)
     acquire(&ptable.lock);
 
     p->state = RUNNABLE;
-
+#if SCHEDULAR == MLFQ
+    push_process(p);
+#endif
     release(&ptable.lock);
 }
 
@@ -271,6 +301,9 @@ int fork(void)
     acquire(&ptable.lock);
 
     np->state = RUNNABLE;
+#if SCHEDULAR == MLFQ
+    push_process(np);
+#endif
 
     release(&ptable.lock);
 
@@ -634,27 +667,16 @@ void scheduler(void)
             {
                 if (p->got_queue == 0)
                 {
-                    p->got_queue = 1;
-                    p->cticks = 0;
-                    p->talloc = ticks;
-                    p->ps_wtime = 0;
-                    queues[p->queue] = push(queues[p->queue], p);
-#ifdef DEBUG
-                    // cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
-#endif
+                    push_process(p);
                 }
                 else
                 {
                     // age >= AGE_THRESH
                     if ((ticks - p->talloc) >= AGE_THERSH && p->queue > 0)
                     {
-                        p->got_queue = 1;
-                        p->cticks = 0;
-                        p->talloc = ticks;
-                        p->ps_wtime = 0;
                         queues[p->queue] = pop(queues[p->queue]);
                         p->queue--;
-                        queues[p->queue] = push(queues[p->queue], p);
+                        push_process(p);
 #ifdef DEBUG
                         cprintf("UPGRADING [%d] to [%d]\n", p->pid, p->queue);
 #endif
@@ -710,6 +732,7 @@ void scheduler(void)
             {
                 if (selected->queue != NQUE - 1)
                     selected->queue++;
+                push_process(p);
             }
         }
 
@@ -823,7 +846,12 @@ wakeup1(void *chan)
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
         if (p->state == SLEEPING && p->chan == chan)
+        {
             p->state = RUNNABLE;
+#if SCHEDULAR == MLFQ
+            push_process(p);
+#endif
+        }
 }
 
 // Wake up all processes sleeping on chan.
@@ -849,7 +877,12 @@ int kill(int pid)
             p->killed = 1;
             // Wake process from sleep if necessary.
             if (p->state == SLEEPING)
+            {
                 p->state = RUNNABLE;
+#if SCHEDULAR == MLFQ
+                push_process(p);
+#endif
+            }
             release(&ptable.lock);
             return 0;
         }
