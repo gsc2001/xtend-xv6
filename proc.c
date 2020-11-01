@@ -103,6 +103,7 @@ found:
     //starttime = ticks and initialize rtime and etime to 0
     p->etime = 0;
     p->rtime = 0;
+    p->iotime = 0;
     p->ctime = ticks;
 
     // init prior = 60, and timeslices = 0
@@ -112,6 +113,11 @@ found:
     p->got_queue = 0;
     p->cticks = 0;
     p->queue = 0;
+
+    p->n_run = 0;
+    p->ps_wtime = 0;
+    for (int i = 0; i < 5; i++)
+        p->q_ticks[i] = 0;
 
     release(&ptable.lock);
 
@@ -141,17 +147,24 @@ found:
 }
 
 // Function to update rtime of running processes
-void inc_rtime(void)
+void upd_ptimes(void)
 {
     acquire(&ptable.lock);
 
-    // loop over all processes and increase rtime for running ones
+    // loop over all processes and increase rtime for running ones and io time for sleeping ones
     for (struct proc *p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
         if (p->state == RUNNING)
         {
             p->rtime++;
+#if SCHEDULER == MLFQ
+            p->q_ticks[p->queue]++;
+#endif
         }
+        if (p->state == SLEEPING)
+            p->iotime++;
+        if (p->state == RUNNABLE)
+            p->ps_wtime++;
     }
     release(&ptable.lock);
 }
@@ -385,7 +398,7 @@ int waitx(int *wtime, int *rtime)
             {
                 // Found one.
                 *rtime = p->rtime;
-                *wtime = p->etime - p->ctime - p->rtime;
+                *wtime = p->etime - p->ctime - p->rtime - p->iotime;
 
                 pid = p->pid;
                 kfree(p->kstack);
@@ -441,7 +454,7 @@ int set_priority(int new_prior, int pid)
         return -1;
     }
 
-    if (new_prior > old_priority)
+    if (new_prior < old_priority)
         yield();
 
     return old_priority;
@@ -466,9 +479,9 @@ void inc_cticks(struct proc *p)
 void scheduler(void)
 {
     struct proc *p;
-#if SCHEDULER != RR
+    // #if SCHEDULER != RR
     struct proc *selected;
-#endif
+    // #endif
     struct cpu *c = mycpu();
     c->proc = 0;
 
@@ -489,6 +502,9 @@ void scheduler(void)
             // Switch to chosen process.  It is the process's job
             // to release ptable.lock and then reacquire it
             // before jumping back to us.
+            p->n_run++;
+            p->ps_wtime = 0;
+
             c->proc = p;
             switchuvm(p);
             p->state = RUNNING;
@@ -502,7 +518,7 @@ void scheduler(void)
 
             // after finishing process runnable then reshedule
         }
-#elif SCHEDULER == FCFS
+        // #elif SCHEDULER == FCFS
 
         selected = 0;
         int earliest = ticks + 100;
@@ -522,6 +538,8 @@ void scheduler(void)
 
         if (selected)
         {
+            selected->n_run++;
+            selected->ps_wtime = 0;
             c->proc = selected;
             switchuvm(selected);
             selected->state = RUNNING;
@@ -534,7 +552,7 @@ void scheduler(void)
             c->proc = 0;
         }
 
-#elif SCHEDULER == PBS
+        // #elif SCHEDULER == PBS
 
         selected = 0;
         int highest = 101;
@@ -563,6 +581,8 @@ void scheduler(void)
             // selected a process
             // inc the timeslices
             selected->timeslices++;
+            selected->n_run++;
+            selected->ps_wtime = 0;
 
             c->proc = selected;
             switchuvm(selected);
@@ -576,7 +596,7 @@ void scheduler(void)
             c->proc = 0;
         }
 
-#elif SCHEDULER == MLFQ
+        // #elif SCHEDULER == MLFQ
 
         //add to queue processes which dont have a queue
         for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
@@ -588,6 +608,7 @@ void scheduler(void)
                     p->got_queue = 1;
                     p->cticks = 0;
                     p->talloc = ticks;
+                    p->ps_wtime = 0;
                     queues[p->queue] = push(queues[p->queue], p);
 #ifdef DEBUG
                     cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
@@ -601,6 +622,7 @@ void scheduler(void)
                         p->got_queue = 1;
                         p->cticks = 0;
                         p->talloc = ticks;
+                        p->ps_wtime = 0;
                         queues[p->queue] = pop(queues[p->queue]);
                         p->queue--;
                         queues[p->queue] = push(queues[p->queue], p);
@@ -619,6 +641,8 @@ void scheduler(void)
             if (queues[i] != 0)
             {
                 selected = queues[i]->p;
+                selected->n_run++;
+                selected->ps_wtime = 0;
                 selected->got_queue = 0;
                 selected->cticks = 0;
                 queues[i] = pop(queues[i]);

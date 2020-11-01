@@ -60,15 +60,19 @@ struct proc
     struct file *ofile[NOFILE]; // Open files
     struct inode *cwd;          // Current directory
     char name[16];              // Process name (debugging)
-    uint ctime;                 // Creation time
-    uint etime;                 // end time
-    uint rtime;                 // total time
-    uint priority;              // priority of the process
-    uint timeslices;            // slices of time taken by this process
+    int ctime;                  // Creation time
+    int etime;                  // end time
+    int rtime;                  // total time
+    int iotime;                 // ticks for whjch the process was sleeping
+    int priority;               // priority of the process
+    int timeslices;             // slices of time taken by this process
     int cticks;                 // ticks for the process in this queue
     int queue;                  // queue of the process
     int got_queue;              // has the process got queue
     int talloc;                 // time to store last queue allocation
+    int ps_wtime;               // wtime for ps
+    int n_run;                  // number of this process is picked by the scheduler
+    int q_ticks[5];             // ticks taken in queue i
 };
 
 // Scheduling algorithms options

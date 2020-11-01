@@ -51,7 +51,7 @@ void trap(struct trapframe *tf)
         {
             acquire(&tickslock);
             ticks++;
-            inc_rtime();
+            upd_ptimes();
             wakeup(&ticks);
             release(&tickslock);
         }
