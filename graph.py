@@ -32,5 +32,6 @@ for pid in graph_proc.keys():
 for pid in graph_proc.keys():
     plt.plot(graph_proc[pid]['x'], graph_proc[pid]['y'], label=pid)
 
+plt.yticks(list(range(5)))
 plt.legend()
 plt.show()

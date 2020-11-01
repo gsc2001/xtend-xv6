@@ -125,6 +125,7 @@ void upd_ptimes(void);
 int set_priority(int, int);
 void inc_cticks(struct proc *);
 int ps(void);
+void push_process(struct proc *);
 
 // swtch.S
 void swtch(struct context **, struct context *);
