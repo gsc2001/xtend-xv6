@@ -640,7 +640,7 @@ void scheduler(void)
                     p->ps_wtime = 0;
                     queues[p->queue] = push(queues[p->queue], p);
 #ifdef DEBUG
-                    cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
+                    // cprintf("ALLOCATING [%d] queue [%d]\n", p->pid, p->queue);
 #endif
                 }
                 else
@@ -676,7 +676,7 @@ void scheduler(void)
                 selected->cticks = 0;
                 queues[i] = pop(queues[i]);
 #ifdef DEBUG
-                cprintf("RUNNING [%d] from queue [%d]\n", selected->pid, selected->queue);
+                // cprintf("RUNNING [%d] from queue [%d]\n", selected->pid, selected->queue);
 #endif
 
                 break;
@@ -704,7 +704,7 @@ void scheduler(void)
         if (selected->state == RUNNABLE)
         {
 #ifdef DEBUG
-            cprintf("PROCESS [%d] from queue [%d] exited with state RUNNABLE\n", selected->pid, selected->queue);
+            // cprintf("PROCESS [%d] from queue [%d] exited with state RUNNABLE\n", selected->pid, selected->queue);
 #endif
             if (selected->cticks >= (1 << (selected->queue)))
             {

@@ -118,7 +118,9 @@ void trap(struct trapframe *tf)
     {
         if (myproc()->cticks >= (1 << (myproc()->queue)))
         {
+#ifdef DEBUG
             cprintf("PROCESS %d yeilding queue %d\n", myproc()->pid, myproc()->queue);
+#endif
             yield();
         }
         else
