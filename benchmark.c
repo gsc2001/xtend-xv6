@@ -40,7 +40,6 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-            my_ps();
             printf(1, "Process: %d Finished\n", j);
             exit();
         }
