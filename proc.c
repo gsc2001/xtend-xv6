@@ -320,6 +320,9 @@ void exit(void)
         panic("init exiting");
 
     curproc->etime = ticks;
+#ifdef DEBUG
+    cprintf("PID: %d TOTAL TICKS: %d\n", curproc->pid, curproc->etime - curproc->ctime);
+#endif
 
     // Close all open files.
     for (fd = 0; fd < NOFILE; fd++)
@@ -429,7 +432,6 @@ int waitx(int *wtime, int *rtime)
                 // Found one.
                 *rtime = p->rtime;
                 *wtime = p->etime - p->ctime - p->rtime - p->iotime;
-
                 pid = p->pid;
                 kfree(p->kstack);
                 p->kstack = 0;
@@ -458,7 +460,6 @@ int waitx(int *wtime, int *rtime)
 
 int set_priority(int new_prior, int pid)
 {
-    cprintf("new, %d %d\n", pid, new_prior);
     if (new_prior < 0 || new_prior > 100)
         return -1;
 
@@ -506,27 +507,27 @@ void inc_cticks(struct proc *p)
     // release(&ptable.lock);
 }
 
-int ps(void)
+int my_ps(void)
 {
     struct proc *p;
     static char *states[] = {
-        [UNUSED] "unused\t",
-        [EMBRYO] "embryo\t",
+        [UNUSED] "unused  ",
+        [EMBRYO] "embryo  ",
         [SLEEPING] "sleeping",
-        [RUNNABLE] "runable\t",
-        [RUNNING] "running\t",
-        [ZOMBIE] "zombie\t",
+        [RUNNABLE] "runable ",
+        [RUNNING] "running ",
+        [ZOMBIE] "zombie  ",
     };
 
     // ps implementation
     acquire(&ptable.lock);
-    cprintf("PID\tPriority\tState\tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
+    cprintf("PID\tPriority\tState   \tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
 
     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     {
         if (p->state == UNUSED)
             continue;
-        cprintf("%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
+        cprintf("%d\t%d\t\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
                 p->pid, p->priority, states[p->state], p->rtime, p->ps_wtime, p->n_run, p->queue,
                 p->q_ticks[0], p->q_ticks[1], p->q_ticks[2], p->q_ticks[3], p->q_ticks[4]);
     }

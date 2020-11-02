@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 logs = ""
-with open('logs2') as f:
+with open('logs') as f:
     logs = f.read()
 
 logs = logs.strip().split('\n')

@@ -70,7 +70,7 @@ struct proc
     int queue;                  // queue of the process
     int got_queue;              // has the process got queue
     int talloc;                 // time to store last queue allocation
-    int ps_wtime;               // wtime for ps
+    int ps_wtime;               // wtime for my_ps
     int n_run;                  // number of this process is picked by the scheduler
     int q_ticks[5];             // ticks taken in queue i
 };
@@ -100,6 +100,6 @@ struct proc_node
 #define NQUE 5
 
 // Aging thresh
-#define AGE_THERSH 10
+#define AGE_THERSH 25
 struct proc_node store[NPROC];
 struct proc_node *queues[NQUE];

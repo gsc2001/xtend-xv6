@@ -200,6 +200,7 @@ UPROGS=\
 	_zombie\
 	_time \
 	_benchmark \
+	_benchmark1 \
 	_setPriority \
 	_ps
 
@@ -274,7 +275,7 @@ EXTRA=\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
-	time.c benchmark.c setPriority.c ps.c
+	time.c benchmark.c setPriority.c ps.c benchmark1.c
 
 dist:
 	rm -rf dist

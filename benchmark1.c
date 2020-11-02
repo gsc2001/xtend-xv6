@@ -1,4 +1,3 @@
-
 #include "types.h"
 #include "user.h"
 
@@ -20,33 +19,24 @@ int main(int argc, char *argv[])
             volatile int i;
             for (volatile int k = 0; k < number_of_processes; k++)
             {
-                if (j % 2 == 0)
+                if (k <= j)
+                {
+                    sleep(200); //io time
+                }
+                else
                 {
                     for (i = 0; i < 100000000; i++)
                     {
                         ; //cpu time
                     }
                 }
-                else
-                {
-                    if (k % 2 == 0)
-                        sleep(200);
-                    else
-                    {
-                        for (i = 0; i < 1000000; i++)
-                        {
-                            ; //cpu time
-                        }
-                    }
-                }
             }
-            my_ps();
             printf(1, "Process: %d Finished\n", j);
             exit();
         }
         else
         {
-            printf(1, "Process %d -> %d\n", j, pid);
+            ;
             set_priority(100 - (20 + j), pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
         }
     }
@@ -54,6 +44,5 @@ int main(int argc, char *argv[])
     {
         wait();
     }
-
     exit();
 }

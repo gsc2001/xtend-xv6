@@ -35,9 +35,9 @@ int sys_waitx(void)
     return waitx(wtime, rtime);
 }
 
-int sys_ps(void)
+int sys_my_ps(void)
 {
-    return ps();
+    return my_ps();
 }
 
 int sys_set_priority(void)

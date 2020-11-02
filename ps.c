@@ -6,9 +6,9 @@ int main(int argc, char **argv)
 {
     if (argc != 1)
     {
-        printf(2, "ps takes no argument\n");
+        printf(2, "my_ps takes no argument\n");
         exit();
     }
-    ps();
+    my_ps();
     exit();
 }
